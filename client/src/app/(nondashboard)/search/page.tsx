@@ -3,7 +3,7 @@
 import { NAVBAR_HEIGHT } from "@/lib/constants";
 import { useAppDispatch, useAppSelector } from "@/state/redux";
 import { useSearchParams } from "next/navigation";
-import React, { useEffect } from "react";
+import React, { Suspense, useEffect } from "react";
 import FiltersBar from "./FiltersBar";
 import FiltersFull from "./FiltersFull";
 import { cleanParams } from "@/lib/utils";
@@ -11,12 +11,10 @@ import { setFilters } from "@/state";
 import Map from "./Map";
 import Listings from "./Listings";
 
-const SearchPage = () => {
+// New component to handle searchParams
+const SearchParamsInitializer = () => {
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
-  const isFiltersFullOpen = useAppSelector(
-    (state) => state.global.isFiltersFullOpen
-  );
 
   useEffect(() => {
     const initialFilters = Array.from(searchParams.entries()).reduce(
@@ -28,7 +26,6 @@ const SearchPage = () => {
         } else {
           acc[key] = value === "any" ? null : value;
         }
-
         return acc;
       },
       {}
@@ -36,7 +33,15 @@ const SearchPage = () => {
 
     const cleanedFilters = cleanParams(initialFilters);
     dispatch(setFilters(cleanedFilters));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [dispatch, searchParams]);
+
+  return null; // This component doesn't render anything
+};
+
+const SearchPage = () => {
+  const isFiltersFullOpen = useAppSelector(
+    (state) => state.global.isFiltersFullOpen
+  );
 
   return (
     <div
@@ -45,6 +50,11 @@ const SearchPage = () => {
         height: `calc(100vh - ${NAVBAR_HEIGHT}px)`,
       }}
     >
+      {/* Wrap the search params initializer in Suspense */}
+      <Suspense fallback={null}>
+        <SearchParamsInitializer />
+      </Suspense>
+      
       <FiltersBar />
       <div className="flex justify-between flex-1 overflow-hidden gap-3 mb-5">
         <div
